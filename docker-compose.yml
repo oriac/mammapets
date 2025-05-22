@@ -1,15 +1,15 @@
 version: '3'
 services:
   web:
-    build: .
+    build: ./src/mammapets/  # Changed build context
     container_name: application
     command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
     depends_on:
       - db
     volumes:
-      - ./src:/src
+      - ./src/mammapets:/app   # Map host's app code to /app in container
       - ./config:/config
-    working_dir: /src/mammapets
+    working_dir: /app          # Changed working directory
     expose:
       - "8000"
     ports:
@@ -18,7 +18,7 @@ services:
       - mammapets
 
   db:
-    image: mysql:5.7
+    image: mysql:8.0
     container_name: data_base
     environment:
       MYSQL_ROOT_PASSWORD: root
