@@ -14,4 +14,5 @@ urlpatterns = [
     path('contract/', views.contract, name='contract'),
     path('new_contract/', views.new_contract, name='new_contract'),
     path('profiles/<int:user_id>/', views.user_profile, name='user_profile'),
+    path('contract/<int:contract_id>/add_log/', views.add_pet_care_log, name='add_pet_care_log'),
 ]

@@ -1,4 +1,5 @@
 from django.db import models
+import datetime
 
 # Create your models here.
 
@@ -46,3 +47,17 @@ class Contract(models.Model):
 
     def __str__(self):
         return self.status
+
+
+class PetCareLog(models.Model):
+    contract = models.ForeignKey(Contract, on_delete=models.CASCADE, related_name='logs')
+    date = models.DateField(default=datetime.date.today)
+    notes = models.TextField(blank=True, null=True)
+    photo = models.ImageField(upload_to='pet_care_logs/%Y/%m/%d/')
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Log for {self.contract.pet.name} on {self.date}"
+
+    class Meta:
+        ordering = ['-date', '-timestamp'] # Order logs by date and then by time

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Add Care Log for {{ pet.name }}</title>
+</head>
+<body>
+    <h1>Add Care Log for {{ pet.name }}</h1>
+    <p>Contract with: {{ contract.client.username }} from {{ contract.start_date|date:"Y-m-d" }} to {{ contract.end_date|date:"Y-m-d" }}</p>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save Log Entry</button>
+    </form>
+
+    <p><a href="{% url 'web:detail' pet_id=pet.id %}">Cancel and return to {{ pet.name }}'s details</a></p>
+</body>
+</html>
