@@ -1,12 +1,22 @@
 <h1>{{ pet.name }}</h1>
 
+<p>{{ pet.description }}</p>
+
+<p>Owner: <a href="{% url 'web:user_profile' user_id=pet.owner.id %}">{{ pet.owner.username }}</a></p>
+
+<h2>Care Information</h2>
+{% if contract and mamma_pet %}
+  <p>This pet is currently being cared for by: <strong>{{ mamma_pet.username }}</strong>.</p>
+  <p>Contract period: {{ contract.start_date|date:"Y-m-d" }} to {{ contract.end_date|date:"Y-m-d" }}.</p>
+{% else %}
+  <p>This pet is not currently under specialized MammaPet care.</p>
+{% endif %}
+
 {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
 
 <form action="{% url 'web:vote' pet.id %}" method="post">
 {% csrf_token %}
-{% for contract in pet.contract_set.all %}
-    <input type="text" name="contract" id="contract{{ forloop.counter }}" value="{{ contract.status }}">
-    <label for="contract{{ forloop.counter }}">Status:</label><br>
-{% endfor %}
+{# Assuming the vote functionality is related to something other than contracts, or will be updated separately #}
+{# If contracts are choices for voting, this part needs to be re-evaluated based on new requirements #}
 <input type="submit" value="Vote">
 </form>

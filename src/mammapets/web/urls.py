@@ -13,4 +13,5 @@ urlpatterns = [
     path('<int:pet_id>/vote/', views.vote, name='vote'),
     path('contract/', views.contract, name='contract'),
     path('new_contract/', views.new_contract, name='new_contract'),
+    path('profiles/<int:user_id>/', views.user_profile, name='user_profile'),
 ]

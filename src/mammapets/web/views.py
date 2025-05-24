@@ -1,11 +1,10 @@
 from django.http import HttpResponse
 
 from .forms import ContractForm
-from .models import Pet
+from .models import Pet, Client, Contract
 from django.template import loader
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.http import Http404
-from django.shortcuts import get_object_or_404
 
 
 def index(request):
@@ -16,7 +15,9 @@ def index(request):
 
 def detail(request, pet_id):
     pet = get_object_or_404(Pet, pk=pet_id)
-    return render(request, 'pets/detail.html', {'pet': pet})
+    contract = Contract.objects.filter(pet=pet).first()
+    mamma_pet = contract.mamma_pet if contract else None
+    return render(request, 'pets/detail.html', {'pet': pet, 'contract': contract, 'mamma_pet': mamma_pet})
 
 
 def results(request, pet_id):
@@ -40,3 +41,18 @@ def new_contract(request):
         post.save()
         return HttpResponse("contract saved")
     return HttpResponse("contract not saved")
+
+
+def user_profile(request, user_id):
+    client = get_object_or_404(Client, pk=user_id)
+    pets = Pet.objects.filter(owner=client)
+    pets_with_care_info = []
+    for pet in pets:
+        contract = Contract.objects.filter(pet=pet).first()
+        pets_with_care_info.append({
+            'pet': pet,
+            'contract': contract,
+            'mamma_pet': contract.mamma_pet if contract else None,
+        })
+    context = {'client': client, 'pets_with_care_info': pets_with_care_info}
+    return render(request, 'profiles/detail.html', context)
