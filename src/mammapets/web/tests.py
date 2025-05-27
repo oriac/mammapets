@@ -207,3 +207,155 @@ class PetCareLogViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "No care logs have been added for this contract period yet.")
         self.assertNotContains(response, self.log_with_photo_and_notes.notes) # Ensure other logs are not showing up
+
+
+# New tests for ContractForm, PetCareLogForm, Contract model, and new_contract view
+
+from django.forms import DateInput
+from .forms import ContractForm, PetCareLogForm
+from django.core.exceptions import ValidationError
+
+class ContractFormTests(TestCase):
+    def test_contract_form_date_widgets_and_attrs(self):
+        form = ContractForm()
+        # Check start_date
+        self.assertIsInstance(form.fields['start_date'].widget, DateInput)
+        self.assertEqual(form.fields['start_date'].widget.attrs['class'], 'datepicker')
+        self.assertEqual(form.fields['start_date'].widget.attrs['placeholder'], 'MM/DD/YYYY')
+        # Check end_date
+        self.assertIsInstance(form.fields['end_date'].widget, DateInput)
+        self.assertEqual(form.fields['end_date'].widget.attrs['class'], 'datepicker')
+        self.assertEqual(form.fields['end_date'].widget.attrs['placeholder'], 'MM/DD/YYYY')
+
+    def test_valid_contract_form_data(self):
+        # Create necessary related objects
+        owner = Client.objects.create(username="formowner", name="Form Owner")
+        pet = Pet.objects.create(name="FormPet", owner=owner)
+        mamma_pet = MammaPet.objects.create(username="formcarer", name="Form Carer")
+        
+        form_data = {
+            'start_date': '01/01/2025',
+            'end_date': '01/31/2025',
+            'pet': pet.id,
+            'mamma_pet': mamma_pet.id,
+            'client': owner.id,
+            'price': 100.00
+        }
+        form = ContractForm(data=form_data)
+        self.assertTrue(form.is_valid(), form.errors.as_text())
+
+    def test_invalid_contract_form_missing_fields(self):
+        form_data = {'price': 100.00} # Missing required fields
+        form = ContractForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('start_date', form.errors)
+        self.assertIn('end_date', form.errors)
+        self.assertIn('pet', form.errors)
+        self.assertIn('mamma_pet', form.errors)
+        self.assertIn('client', form.errors)
+
+
+class PetCareLogFormTests(TestCase):
+    def test_no_end_date_field_in_pet_care_log_form(self):
+        form = PetCareLogForm()
+        self.assertNotIn('end_date', form.fields)
+
+    def test_valid_pet_care_log_form(self):
+        # Create a dummy image file for uploads
+        dummy_image_content = b"GIF89a\x01\x00\x01\x00\x80\x00\x00\x00\x00\x00\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
+        dummy_image = SimpleUploadedFile("test_log_photo.gif", dummy_image_content, content_type="image/gif")
+        
+        form_data = {'notes': 'This is a test log entry.'}
+        file_data = {'photo': dummy_image}
+        form = PetCareLogForm(data=form_data, files=file_data)
+        self.assertTrue(form.is_valid(), form.errors.as_text())
+
+
+class ContractModelTests(TestCase):
+    def setUp(self):
+        self.owner = Client.objects.create(username="modelowner", name="Model Owner")
+        self.pet = Pet.objects.create(name="ModelPet", owner=self.owner)
+        self.mamma_carer = MammaPet.objects.create(username="modelcarer", name="Model Carer")
+
+    def test_contract_status_default(self):
+        contract = Contract.objects.create(
+            pet=self.pet,
+            mamma_pet=self.mamma_carer,
+            client=self.owner,
+            start_date=timezone.now(),
+            end_date=timezone.now() + datetime.timedelta(days=30),
+            price=150
+        )
+        self.assertEqual(contract.status, Contract.ContractStatus.PENDING)
+
+    def test_contract_status_valid_choice(self):
+        contract = Contract(
+            pet=self.pet,
+            mamma_pet=self.mamma_carer,
+            client=self.owner,
+            start_date=timezone.now(),
+            end_date=timezone.now() + datetime.timedelta(days=30),
+            price=150,
+            status=Contract.ContractStatus.ACTIVE
+        )
+        contract.full_clean() # Should not raise ValidationError
+        contract.save()
+        self.assertEqual(contract.status, Contract.ContractStatus.ACTIVE)
+
+    def test_contract_status_invalid_choice(self):
+        with self.assertRaises(ValidationError):
+            contract = Contract(
+                pet=self.pet,
+                mamma_pet=self.mamma_carer,
+                client=self.owner,
+                start_date=timezone.now(),
+                end_date=timezone.now() + datetime.timedelta(days=30),
+                price=150,
+                status="INVALID_STATUS" # An invalid choice
+            )
+            contract.full_clean() # This should raise ValidationError
+
+
+class NewContractViewTests(TestCase):
+    def setUp(self):
+        self.owner = Client.objects.create(username="viewowner", name="View Owner")
+        self.pet = Pet.objects.create(name="ViewPet", owner=self.owner)
+        self.mamma_carer = MammaPet.objects.create(username="viewcarer", name="View Carer")
+        self.new_contract_url = reverse('web:new_contract')
+        self.pet_detail_url = reverse('web:detail', args=[self.pet.id])
+
+    def test_new_contract_view_get(self):
+        response = self.client.get(self.new_contract_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, 'pets/contract.html')
+        self.assertIsInstance(response.context['form'], ContractForm)
+
+    def test_new_contract_view_post_valid(self):
+        form_data = {
+            'start_date': '01/01/2026',
+            'end_date': '01/31/2026',
+            'pet': self.pet.id,
+            'mamma_pet': self.mamma_carer.id,
+            'client': self.owner.id,
+            'price': 200.00
+        }
+        contract_count_before = Contract.objects.count()
+        response = self.client.post(self.new_contract_url, data=form_data)
+        
+        self.assertEqual(Contract.objects.count(), contract_count_before + 1)
+        # The redirect URL depends on the created contract's pet ID.
+        # Since we use self.pet, its ID is fixed for this test.
+        created_contract = Contract.objects.latest('id') # Assuming id is auto-incrementing PK
+        self.assertRedirects(response, reverse('web:detail', args=[created_contract.pet.id]))
+
+
+    def test_new_contract_view_post_invalid(self):
+        form_data = {'price': 200.00} # Missing required fields
+        contract_count_before = Contract.objects.count()
+        response = self.client.post(self.new_contract_url, data=form_data)
+
+        self.assertEqual(response.status_code, 200) # Should re-render the form
+        self.assertTemplateUsed(response, 'pets/contract.html')
+        self.assertIsInstance(response.context['form'], ContractForm)
+        self.assertTrue(response.context['form'].errors) # Check for form errors
+        self.assertEqual(Contract.objects.count(), contract_count_before) # No new contract created

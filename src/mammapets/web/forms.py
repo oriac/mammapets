@@ -7,10 +7,16 @@ class ContractForm(ModelForm):
     class Meta:
         model = Contract
         fields = ['start_date', 'end_date', 'pet', 'mamma_pet', 'price', 'client']
-        start_date = forms.DateField(
-            widget=forms.DateInput(format='%m/%d/%Y', attrs={'class': 'datepicker'}),
-            input_formats=('%m/%d/%Y',)
-        )
+        widgets = {
+            'start_date': forms.DateInput(
+                format='%m/%d/%Y',
+                attrs={'class': 'datepicker', 'placeholder': 'MM/DD/YYYY'}
+            ),
+            'end_date': forms.DateInput(
+                format='%m/%d/%Y',
+                attrs={'class': 'datepicker', 'placeholder': 'MM/DD/YYYY'}
+            ),
+        }
 
 
 class PetCareLogForm(forms.ModelForm):
@@ -24,7 +30,3 @@ class PetCareLogForm(forms.ModelForm):
             'notes': 'Daily Notes',
             'photo': 'Upload Photo'
         }
-        end_date = forms.DateField(
-            widget=forms.DateInput(format='%m/%d/%Y', attrs={'class': 'datepicker'}),
-            input_formats=('%m/%d/%Y',)
-        )

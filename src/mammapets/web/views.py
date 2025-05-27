@@ -36,27 +36,25 @@ def detail(request, pet_id):
     return render(request, 'pets/detail.html', context)
 
 
-def results(request, pet_id):
-    response = "You're looking at the results of question %s."
-    return HttpResponse(response % pet_id)
-
-
-def vote(request, pet_id):
-    return HttpResponse("You're voting on question %s." % pet_id)
-
-
 def contract(request):
     form = ContractForm()
     return render(request, 'pets/contract.html', {'form': form})
 
 
 def new_contract(request):
-    form = ContractForm(request.POST)
-    if form.is_valid():
-        post = form.save(commit=False)
-        post.save()
-        return HttpResponse("contract saved")
-    return HttpResponse("contract not saved")
+    if request.method == 'POST':
+        form = ContractForm(request.POST)
+        if form.is_valid():
+            contract = form.save() # commit=True by default, which is fine here
+            # Assuming the 'detail' view in 'web' app is named 'detail'
+            # and takes 'pet_id' as an argument.
+            return redirect('web:detail', pet_id=contract.pet.id)
+        else:
+            # Form is invalid, re-render with errors
+            return render(request, 'pets/contract.html', {'form': form})
+    else: # GET request
+        form = ContractForm()
+        return render(request, 'pets/contract.html', {'form': form})
 
 
 def user_profile(request, user_id):

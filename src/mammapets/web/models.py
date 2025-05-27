@@ -42,11 +42,21 @@ class Contract(models.Model):
     mamma_pet = models.ForeignKey(MammaPet, on_delete=models.CASCADE)
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
     price = models.FloatField(default=0)
-    # TODO: CHANGE TO ENUM
-    status = models.CharField(max_length=200)
+    
+    class ContractStatus(models.TextChoices):
+        PENDING = 'PENDING', 'Pending'
+        ACTIVE = 'ACTIVE', 'Active'
+        COMPLETED = 'COMPLETED', 'Completed'
+        CANCELLED = 'CANCELLED', 'Cancelled'
+
+    status = models.CharField(
+        max_length=20,
+        choices=ContractStatus.choices,
+        default=ContractStatus.PENDING,
+    )
 
     def __str__(self):
-        return self.status
+        return f"Contract for {self.pet.name} - {self.get_status_display()}"
 
 
 class PetCareLog(models.Model):
