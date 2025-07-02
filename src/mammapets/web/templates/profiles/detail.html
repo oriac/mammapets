@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ client.username }}'s Profile</title>
+</head>
+<body>
+    <h1>{{ client.username }}'s Profile</h1>
+    <p>About {{ client.username }}: {{ client.description }}</p>
+
+    <h2>Pets</h2>
+    {% if pets_with_care_info %}
+      <ul>
+        {% for item in pets_with_care_info %}
+          <li>
+            <strong>{{ item.pet.name }}</strong>: {{ item.pet.description }}
+            {% if item.contract %}
+              <p><em>Cared for by: {{ item.mamma_pet.username }}</em></p>
+              <p><em>Contract period: {{ item.contract.start_date|date:"Y-m-d" }} to {{ item.contract.end_date|date:"Y-m-d" }}</em></p>
+            {% else %}
+              <p><em>Not currently under specialized MammaPet care.</em></p>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>{{ client.username }} has no pets registered.</p>
+    {% endif %}
+</body>
+</html>
